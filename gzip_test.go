@@ -79,9 +79,13 @@ func TestGzip(t *testing.T) {
 	assert.Equal(t, w.Code, 200)
 	assert.Equal(t, w.Header().Get("Content-Encoding"), "gzip")
 	assert.Equal(t, w.Header().Get("Vary"), "Accept-Encoding")
-	assert.NotEqual(t, w.Header().Get("Content-Length"), "0")
+	assert.NotEqual(t, w.Result().Header.Get("Content-Length"), "0")
 	assert.NotEqual(t, w.Body.Len(), 19)
-	assert.Equal(t, fmt.Sprint(w.Body.Len()), w.Header().Get("Content-Length"))
+	assert.NotEqual(t, "19", w.Result().Header.Get("Content-Length"))
+	// The middleware is streaming the content before knowing the size.
+	// Headers are written before knowing the final response size.
+	// Probably a future feature
+	assert.Equal(t, 0, len(w.Result().Header["Content-Length"]))
 
 	gr, err := gzip.NewReader(w.Body)
 	assert.NoError(t, err)
